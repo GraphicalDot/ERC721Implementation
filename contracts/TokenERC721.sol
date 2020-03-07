@@ -1,9 +1,10 @@
 
 pragma solidity ^0.6.0;
 
-import "../interfaces/IERC721.sol";
-import "./CheckerERC165.sol";
-import "../interfaces/SafeMath.sol";
+import '../interfaces/IERC721.sol';
+import '../interfaces/IERCTokenReceiver.sol';
+import './CheckerERC165.sol';
+import '../interfaces/SafeMath.sol';
 
 contract TokenERC721 is IERC721, CheckERC165{
     using SafeMath for uint256;
@@ -52,8 +53,16 @@ contract TokenERC721 is IERC721, CheckERC165{
         ] = true;
     }
     
+    /*
+    @notice Query if a contract implements an interface
+    @param _tokenId tokenid which needs to be check for validity
+    @return `true` if _tokenId is a valid tokenId
+    */
+    function isValidToken(uint256 _tokenId) internal view returns(bool){
+        return _tokenId != 0 && _tokenId <= maxId && !burned[_tokenId];
+        
+    }
 
-    
     function balanceOf(address owner) public view override returns (uint256){
         return balances[owner];
         
@@ -62,7 +71,24 @@ contract TokenERC721 is IERC721, CheckERC165{
     /**
      * @dev Returns the owner of the NFT specified by `tokenId`.
      */
-    function ownerOf(uint256 tokenId) public view override returns (address owner){
+    function ownerOf(uint256 _tokenId) public view override returns (address owner){
+        require(isValidToken(_tokenId));
+        
+        if (owners[_tokenId] != address(0)){
+            return owners[_tokenId];
+        }
+        return creator;
+        
+    }
+    
+    function setApprovalForAll(address _operator, bool _approved) public override {
+        emit ApprovalForAll(msg.sender, _operator, _approved);
+        authorised[msg.sender][_operator] = _approved;
+        
+    }
+    
+    function isApprovedForAll(address _owner, address _operator) public view override returns (bool){
+        return authorised[_owner][_operator];
         
     }
 
@@ -78,9 +104,7 @@ contract TokenERC721 is IERC721, CheckERC165{
      * - If the caller is not `from`, it must be have been allowed to move this
      * NFT by either {approve} or {setApprovalForAll}.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override{
-        
-    }
+
     /**
      * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to
      * another (`to`).
@@ -89,27 +113,63 @@ contract TokenERC721 is IERC721, CheckERC165{
      * - If the caller is not `from`, it must be approved to move this NFT by
      * either {approve} or {setApprovalForAll}.
      */
-    function transferFrom(address from, address to, uint256 tokenId) public override {
+    function transferFrom(address _from, address _to, uint256 _tokenId) public override {
+        require(isValidToken(_tokenId));
+        address  owner = ownerOf(_tokenId); 
+        require ( owner == msg.sender
+        || allowance[_tokenId] == msg.sender
+        || authorised[owner][msg.sender]);
         
+        require(owner == _from);
+        require(_to != address(0));
+        emit Transfer(_from, _to, _tokenId);
+        owners[_tokenId] = _to;
+        balances[_from]--;
+        balances[_to]++;
+
+        if(allowance[_tokenId] != address(0)){
+           delete allowance[_tokenId];
+        }
+
     }
     
-    function approve(address to, uint256 tokenId) public override {
+    function approve(address _to, uint256 _tokenId) public override{
+        require(isValidToken(_tokenId));
+        address  owner = ownerOf(_tokenId);
+        require(msg.sender == owner || authorised[owner][msg.sender], "Message sender should be the owner of tokenId or owner has authorised msg.sender as the guardian of his/her tokens");
+        emit Approval(owner, _to, _tokenId);
+        allowance[_tokenId] = _to;
+
         
     }
-    function getApproved(uint256 tokenId) public view override returns (address operator){
+    function getApproved(uint256 _tokenId) public view override returns (address operator){
+        require(isValidToken(_tokenId));
+        return allowance[_tokenId];
         
     }
 
-    function setApprovalForAll(address operator, bool _approved) public override {
+
+
+
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public override {
         
+        transferFrom(_from,_to, _tokenId);
+        //Get size of "_to" address, if 0 it's a wallet
+        uint32 size;
+        assembly {
+            size := extcodesize(_to)
+        }
+        
+        if (size> 0){
+            ERC721TokenReceiver receiver = ERC721TokenReceiver(_to);
+            require(receiver.onERC721Received(_to, _from,_tokenId, _data)== bytes4(keccak256("onERC721Received(address, address, uint256, bytes)")) );
+        
+            
+        }
     }
     
-    function isApprovedForAll(address owner, address operator) public view override returns (bool){
-        
-    }
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public override{
+        safeTransferFrom(_from,_to,_tokenId,"");
 
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override {
-        
     }
 }
