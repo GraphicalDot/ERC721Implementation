@@ -33,22 +33,12 @@ contract TokenERC721 is IERC721, CheckERC165{
 
             bytes4(keccak256("balanceOf(address)")) ^
             bytes4(keccak256("ownerOf(uint256)")) ^
-            //this.safeTransferFrom.selector ^
-            //Have to manually do the two transferFroms because overloading confuse selector
             bytes4(keccak256("safeTransferFrom(address,address,uint256)"))^
             bytes4(keccak256("safeTransferFrom(address,address,uint256,bytes)"))^
             bytes4(keccak256("transferFrom(address,address,uint256)"))^
-
             bytes4(keccak256("approve(address,uint256)"))^
-
-
             bytes4(keccak256("getApproved(uint256)"))^
-
-
-
             bytes4(keccak256("setApprovalForAll(address,bool)"))^
-
-
             bytes4(keccak256("isApprovedForAll(address,address)"))
         ] = true;
     }
@@ -67,6 +57,28 @@ contract TokenERC721 is IERC721, CheckERC165{
         return balances[owner];
         
     }
+        function issueTokens(uint256 _newTokens) external {
+        require(msg.sender == creator, "Only owner of the smart contract can issue new tokens");
+        balances[msg.sender] = balances[msg.sender].add(_newTokens); 
+        //We have to emit an event for each token that gets created
+        for(uint i = maxId.add(1); i <= maxId.add(_newTokens); i++){
+               emit Transfer(address(0), creator, i);
+        }
+        maxId += _newTokens; 
+    } 
+
+    function burnTokens(uint256 _tokenId) external {
+        //NO need to check validity of the token as it will be checked in ownerOf
+        address owner = ownerOf(_tokenId);
+
+        require(allowance[_tokenId]== msg.sender || owner==msg.sender || authorised[owner][msg.sender]);
+        burned[_tokenId] = true;
+        balances[owner]--;
+        emit Transfer(owner, address(0), _tokenId);
+
+        
+    }
+
 
     /**
      * @dev Returns the owner of the NFT specified by `tokenId`.
@@ -92,27 +104,7 @@ contract TokenERC721 is IERC721, CheckERC165{
         
     }
 
-    /**
-     * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to
-     * another (`to`).
-     *
-     *
-     *
-     * Requirements:
-     * - `from`, `to` cannot be zero.
-     * - `tokenId` must be owned by `from`.
-     * - If the caller is not `from`, it must be have been allowed to move this
-     * NFT by either {approve} or {setApprovalForAll}.
-     */
-
-    /**
-     * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to
-     * another (`to`).
-     *
-     * Requirements:
-     * - If the caller is not `from`, it must be approved to move this NFT by
-     * either {approve} or {setApprovalForAll}.
-     */
+ 
     function transferFrom(address _from, address _to, uint256 _tokenId) public override {
         require(isValidToken(_tokenId));
         address  owner = ownerOf(_tokenId); 
@@ -147,9 +139,6 @@ contract TokenERC721 is IERC721, CheckERC165{
         return allowance[_tokenId];
         
     }
-
-
-
 
     function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public override {
         
