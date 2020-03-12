@@ -8,3 +8,14 @@ accounts
 wjfhcwdiucgwd;cgwdo;g
 from browni 
 ChckERC721
+TokenERC721
+TokenERC721.deploy
+t = TokenERC721.deploy()
+t = TokenERC721.deploy({"from": accounts[0]})
+accounts
+t = TokenERC721.deploy({"from": accounts[0]})
+accounts
+t = TokenERC721.deploy({"from": accounts[0]})
+accounts[0].deploy(TokenERC721)
+network.connecte("development")
+network.connect("development")
