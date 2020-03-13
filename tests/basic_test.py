@@ -1,26 +1,46 @@
 
 import pytest
-
+import random
 from brownie import TokenERC721, accounts, reverts
 
-ACCOUNT_ONE_TOKEN_IDS = [952807, 224825, 293269, 188712]
-ACCOUNT_TWO_TOKEN_IDS = [870253, 257046, 138780, 653193, 883209]
+ACCOUNT_ONE_TOKEN_IDS = [random.randint(99999, 999999) for e in '_'*4]
+
+ACCOUNT_TWO_TOKEN_IDS = [random.randint(99999, 999999) for e in '_'*4]
+
+
+
 
 @pytest.fixture(scope="module", autouse=True)
 def token():
     return accounts[0].deploy(TokenERC721)
 
-def test_mint_token_account_one(token):
-    for token_id in ACCOUNT_ONE_TOKEN_IDS:
-        token.mint(accounts[1], token_id, {'from': accounts[0]})
+
+
+
+@pytest.mark.parametrize('token_id', ACCOUNT_ONE_TOKEN_IDS)
+def test_mint_token_account_one(token, token_id):
+    token.mint(accounts[1], token_id, {'from': accounts[0]})
+    #assert token.balanceOf(accounts[1]) == len(ACCOUNT_ONE_TOKEN_IDS)
+    assert token.ownerOf(token_id) == accounts[1]
+
+
+
+
+def test_balance_of_account_one(token):
+    #assert token.balanceOf(accounts[1]) == len(ACCOUNT_ONE_TOKEN_IDS)
     assert token.balanceOf(accounts[1]) == len(ACCOUNT_ONE_TOKEN_IDS)
 
 
-def test_mint_token_account_two(token):
-    for token_id in ACCOUNT_TWO_TOKEN_IDS:
-        token.mint(accounts[2], token_id, {'from': accounts[0]})
-    assert token.balanceOf(accounts[2]) == len(ACCOUNT_TWO_TOKEN_IDS)
+@pytest.mark.parametrize('token_id', ACCOUNT_TWO_TOKEN_IDS)
+def test_mint_token_account_two(token, token_id):
+    token.mint(accounts[2], token_id, {'from': accounts[0]})
+    #assert token.balanceOf(accounts[1]) == len(ACCOUNT_ONE_TOKEN_IDS)
+    assert token.ownerOf(token_id) == accounts[2]
 
+
+
+def test_balance_of_account_two(token):
+    assert token.balanceOf(accounts[2]) == len(ACCOUNT_TWO_TOKEN_IDS)
 
 
 
@@ -87,8 +107,12 @@ def test_burn_valid_owner(token):
     
     
 
-    with reverts("003002"): #NOT_OWNER_APPROVED_OR_OPERATOR
+    with reverts(): #NOT_OWNER_APPROVED_OR_OPERATOR
         token.ownerOf(ACCOUNT_TWO_TOKEN_IDS[0]) 
+
+
+
+
 
 
 

@@ -49,6 +49,25 @@ contract TokenERC721 is IERC721, CheckERC165{
     mapping (uint256 => address) internal idToApproval; 
     mapping (address => mapping (address => bool)) internal ownerToOperators;
 
+
+
+    event Transfer(
+        address indexed _from,
+        address indexed _to,
+        uint256 indexed _tokenId
+    );
+
+    event Approval(
+        address indexed _owner,
+        address indexed _approved,
+        uint256 indexed _tokenId
+    );
+
+    event ApprovalForAll(
+        address indexed _owner,
+        address indexed _operator,
+        bool _approved
+    );
     event Received(address, uint);
 
     modifier isCreator(address _address){
@@ -64,7 +83,8 @@ contract TokenERC721 is IERC721, CheckERC165{
         _;
     }
     
-        modifier canOperate(uint256 _tokenId){
+    
+    modifier canOperate(uint256 _tokenId){
         address tokenOwner = ownerOf(_tokenId);
         require(tokenOwner == msg.sender || ownerToOperators[tokenOwner][msg.sender], NOT_OWNER_OR_OPERATOR);
         _;
