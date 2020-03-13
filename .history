@@ -19,3 +19,46 @@ t = TokenERC721.deploy({"from": accounts[0]})
 accounts[0].deploy(TokenERC721)
 network.connecte("development")
 network.connect("development")
+t = TokenERC721.deploy({"from": accounts[0]})
+t.balanceOf(0x0)
+t.balanceOf('0x0')
+t.balanceOf(0x0)
+address(0)
+from brownie import address
+accounts
+t = TokenERC721.deploy({"from": accounts[0]})
+t.balanceOf(accounts[0])
+t.balanceOf(0xdEA717Ec63e114076444Ae2C8c7B5D6eA04aD9b9)
+t.balanceOf('0xdEA717Ec63e114076444Ae2C8c7B5D6eA04aD9b9')
+t.balanceOf('0x0')
+t.balanceOf(0x0)
+t.balanceOf('0xdEA717Ec63e114076444Ae2C8c7B5D6eA04aD9b9')
+t = TokenERC721.deploy({"from": accounts[0]})
+t.balanceOf('0xdEA717Ec63e114076444Ae2C8c7B5D6eA04aD9b9')
+t = TokenERC721.deploy({"from": accounts[0]})
+t.balanceOf('0xdEA717Ec63e114076444Ae2C8c7B5D6eA04aD9b9')
+t = TokenERC721.deploy({"from": accounts[0]})
+t.balanceOf('0xdEA717Ec63e114076444Ae2C8c7B5D6eA04aD9b9')
+t.balanceOf(accounts[0])
+t.balanceOf(0x0)
+t.balanceOf('0x0')
+from brownie import Accounts
+from brownie import Account
+accounts
+len
+len("0xE5b1cD1431F73C62D80453014E31caCAe063d7eF")
+f""
+f"0x{0*40}"
+f"0x{'0'*40}"
+len(f"0x{'0'*40}")
+t = TokenERC721.deploy({"from": accounts[0]})
+f"0x{'0'*40}"
+t.balanceOf(f"0x{'0'*40}")
+t = TokenERC721.deploy({"from": accounts[0]})
+t.balanceOf(account[1])
+t.balanceOf(accounts[1])
+t = TokenERC721.deploy({"from": accounts[0]})
+t.balanceOf(accounts[1])
+t.balanceOf("0x0")
+zero_address = f"0x{'0'*40}"
+t.balanceOf(zero_address)

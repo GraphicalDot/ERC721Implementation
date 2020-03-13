@@ -300,7 +300,7 @@ contract TokenERC721 is IERC721, CheckERC165{
         
         if (size> 0){
             ERC721TokenReceiver receiver = ERC721TokenReceiver(_to);
-            require(receiver.onERC721Received(_to, _from, uint256(_tokenId), _data)== bytes4(keccak256("onERC721Received(address, address, uint256, bytes)")), NOT_ABLE_TO_RECEIVE_NFT);
+            require(receiver.onERC721Received(address(this), _from, _tokenId, _data)== bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")), NOT_ABLE_TO_RECEIVE_NFT);
         
             
         }

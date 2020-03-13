@@ -16,9 +16,24 @@ def token():
 
 
 
+def test_balance_of_account_zero(token):
+    """
+    throws when trying to get count of NFTs owned by 0x0 address
+    """
+    zero_address = f"0x{'0'*40}"
+    with reverts():
+        token.balanceOf(zero_address)
+
+
+
+
 
 @pytest.mark.parametrize('token_id', ACCOUNT_ONE_TOKEN_IDS)
 def test_mint_token_account_one(token, token_id):
+    """
+    Create new tokens and issue them to account[1]
+    """
+
     token.mint(accounts[1], token_id, {'from': accounts[0]})
     #assert token.balanceOf(accounts[1]) == len(ACCOUNT_ONE_TOKEN_IDS)
     assert token.ownerOf(token_id) == accounts[1]
@@ -33,15 +48,31 @@ def test_balance_of_account_one(token):
 
 @pytest.mark.parametrize('token_id', ACCOUNT_TWO_TOKEN_IDS)
 def test_mint_token_account_two(token, token_id):
+    """
+    Create new tokens and issue them to account[2]
+    """
     token.mint(accounts[2], token_id, {'from': accounts[0]})
     #assert token.balanceOf(accounts[1]) == len(ACCOUNT_ONE_TOKEN_IDS)
     assert token.ownerOf(token_id) == accounts[2]
 
 
 
+def test_mint_token(token):
+    """
+    Create new tokens by accounts[1]
+    This should ideally fail as only owner of this contract i.e accounts[0]
+    can mint tokens
+    """
+    token_id = random.randint(99999, 999999)
+    with reverts("003009"): ##IS_CREATOR
+        token.mint(accounts[2], token_id, {'from': accounts[1]})
+
+
+
+
+
 def test_balance_of_account_two(token):
     assert token.balanceOf(accounts[2]) == len(ACCOUNT_TWO_TOKEN_IDS)
-
 
 
 def test_mint_existing_token(token):
