@@ -2,13 +2,13 @@
 pragma solidity ^0.6.2;
 
 import '../interfaces/IERC721.sol';
+import '../interfaces/IERC721Enumerable.sol';
 import '../interfaces/IERCTokenReceiver.sol';
 import './CheckerERC165.sol';
 import '../interfaces/SafeMath.sol';
 
 
-
-contract TokenERC721 is IERC721, CheckERC165{
+contract TokenERC721 is IERC721,  IERC721Enumerable, CheckERC165{
     using SafeMath for uint256;
 
 
@@ -21,10 +21,11 @@ contract TokenERC721 is IERC721, CheckERC165{
     string constant NOT_OWNER = "003007";
     string constant IS_OWNER = "003008";
     string constant IS_CREATOR = "003009";
+    string constant OUT_OF_BOUNDS = "003010"; //owner index out of bounds
 
     bytes4 internal constant MAGIC_ON_ERC721_RECEIVED = 0x150b7a02;
 
-    uint256 totalSupply;
+    uint256 private _totalSupply;
 
     address internal creator;
     //maxId is used to check if a tokenId is valid.
@@ -51,6 +52,7 @@ contract TokenERC721 is IERC721, CheckERC165{
 
 
 
+    
     event Transfer(
         address indexed _from,
         address indexed _to,
@@ -70,6 +72,9 @@ contract TokenERC721 is IERC721, CheckERC165{
     );
     event Received(address, uint);
 
+    
+
+
     modifier isCreator(address _address){
         require(_address == creator, IS_CREATOR);
         _;
@@ -83,8 +88,7 @@ contract TokenERC721 is IERC721, CheckERC165{
         _;
     }
     
-    
-    modifier canOperate(uint256 _tokenId){
+        modifier canOperate(uint256 _tokenId){
         address tokenOwner = ownerOf(_tokenId);
         require(tokenOwner == msg.sender || ownerToOperators[tokenOwner][msg.sender], NOT_OWNER_OR_OPERATOR);
         _;
@@ -118,8 +122,47 @@ contract TokenERC721 is IERC721, CheckERC165{
 
             bytes4(keccak256("isApprovedForAll(address,address)"))
         ] = true;
+        
+        
+        
+        //Add to ERC165 Interface Check for ERC721Enumerable implementation
+        // 0x18160ddd ^ 0x2f745c59 ^ 0x4f6ccce7 == 0x780e9d63
+        supportedInterfaces[
+          bytes4(keccak256('totalSupply()'))^// == 0x18160ddd
+          bytes4(keccak256('tokenOfOwnerByIndex(address,uint256)'))^// == 0x2f745c59
+          bytes4(keccak256('tokenByIndex(uint256)')) //== 0x4f6ccce7
+          ] = true;
     }
     
+    function totalSupply() external view override returns (uint256){
+        return _totalSupply;
+    }
+    
+    /**
+     * @dev Gets the token ID at a given index of the tokens list of the requested owner.
+     * @param _owner address owning the tokens list to be accessed
+     * @param _index uint256 representing the index to be accessed of the requested tokens list
+     * @return uint256 _tokenId at the given index of the tokens list owned by the requested address
+     */
+    function tokenOfOwnerByIndex(address _owner, uint256 _index) external view override returns (uint256){
+        require(_index <balanceOf(_owner), OUT_OF_BOUNDS);
+        return balances[_owner][_index];
+
+        
+    }
+
+    /**
+     * @dev Gets the token ID at a given index of all the tokens in this contract
+     * Reverts if the index is greater or equal to the total number of tokens.
+     * @param _index uint256 representing the index to be accessed of the tokens list
+     * @return uint256 token ID at the given index of the tokens list
+     */
+    function tokenByIndex(uint256 _index) external view override returns (uint256){
+        require(_index < allTokens.length, "003010"); //We cannot get it from totalSupply function because totalSupply
+                                                //increases or decreases on burn and add tokens, but allTokens
+                                                // length will keep on growing.
+        return allTokens[_index];
+    }
     
     function contractBalance() external view returns (uint256 balance) {
         address payable self = address(this);
@@ -129,7 +172,7 @@ contract TokenERC721 is IERC721, CheckERC165{
     
     function _addNFToken(address _to, uint256 _tokenId) internal validNFToken(_tokenId){
         require(owners[_tokenId] == address(0), NFT_ALREADY_EXISTS); 
-        totalSupply = totalSupply.add(1); //Add 1 to the totalsupply of tokens
+        _totalSupply = _totalSupply.add(1); //Add 1 to the _totalSupply of tokens
 
         owners[_tokenId] = _to; //Mark this _to as an array of _tokenId
         
@@ -152,7 +195,7 @@ contract TokenERC721 is IERC721, CheckERC165{
     function _removeNFToken(address _from, uint256 _tokenId) internal validNFToken(_tokenId)  haveOwnership(_tokenId){
 
 
-        totalSupply = totalSupply.sub(1); //subtract 1 to the totalsupply of tokens
+        _totalSupply = _totalSupply.sub(1); //subtract 1 to the _totalSupply of tokens
 
         delete owners[_tokenId]; //Delete the ownership of this _tokenId
         
@@ -300,7 +343,9 @@ contract TokenERC721 is IERC721, CheckERC165{
         
         if (size> 0){
             ERC721TokenReceiver receiver = ERC721TokenReceiver(_to);
-            require(receiver.onERC721Received(address(this), _from, _tokenId, _data)== bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")), NOT_ABLE_TO_RECEIVE_NFT);
+            bytes4 _bytes = receiver.onERC721Received(address(this), _from, _tokenId, _data);
+
+            require(_bytes == bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")), NOT_ABLE_TO_RECEIVE_NFT);
         
             
         }
